@@ -25,13 +25,18 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
-  // ── GET /api/ping  (health check — ok if Groq key set OR Ollama running) ──
+  // ── GET /api/ping  (server health — always 200 if server is up) ──────────
   if (req.method === 'GET' && req.url === '/api/ping') {
+    res.writeHead(200); res.end('ok');
+    return;
+  }
+
+  // ── GET /api/ai-status  (tells client if AI is available) ─────────────────
+  if (req.method === 'GET' && req.url === '/api/ai-status') {
     if (GROQ_API_KEY) {
       res.writeHead(200); res.end('ok');
       return;
     }
-    // fallback: check local Ollama
     try {
       const r = await fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(1500) });
       if (r.ok) { res.writeHead(200); res.end('ok'); }
