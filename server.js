@@ -25,17 +25,24 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
-  // ── GET /api/ping  (health check — tells client Groq is available) ────────
+  // ── GET /api/ping  (health check — ok if Groq key set OR Ollama running) ──
   if (req.method === 'GET' && req.url === '/api/ping') {
     if (GROQ_API_KEY) {
       res.writeHead(200); res.end('ok');
-    } else {
-      res.writeHead(503); res.end('no key');
+      return;
+    }
+    // fallback: check local Ollama
+    try {
+      const r = await fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(1500) });
+      if (r.ok) { res.writeHead(200); res.end('ok'); }
+      else       { res.writeHead(503); res.end('no ai'); }
+    } catch {
+      res.writeHead(503); res.end('no ai');
     }
     return;
   }
 
-  // ── POST /api/tafsir  (Groq llama streaming) ──────────────────────────────
+  // ── POST /api/tafsir  (Groq if key set, else Ollama fallback) ─────────────
   if (req.method === 'POST' && req.url === '/api/tafsir') {
     let body = '';
     req.on('data', c => body += c);
@@ -63,50 +70,72 @@ Keep it grounded, honest, and relevant to everyday modern life. No academic lang
           Connection: 'keep-alive',
         });
 
-        const groqRes = await fetch(GROQ_API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type':  'application/json',
-            'Authorization': `Bearer ${GROQ_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: GROQ_MODEL,
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user',   content: userPrompt   },
-            ],
-            stream: true,
-            max_tokens: 400,
-            temperature: 0.7,
-          }),
-        });
+        if (GROQ_API_KEY) {
+          // ── Groq (production) ────────────────────────────────────────────
+          const groqRes = await fetch(GROQ_API_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type':  'application/json',
+              'Authorization': `Bearer ${GROQ_API_KEY}`,
+            },
+            body: JSON.stringify({
+              model: GROQ_MODEL,
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user',   content: userPrompt   },
+              ],
+              stream: true,
+              max_tokens: 400,
+              temperature: 0.7,
+            }),
+          });
 
-        if (!groqRes.ok) {
-          const err = await groqRes.text();
-          throw new Error(`Groq ${groqRes.status}: ${err}`);
-        }
+          if (!groqRes.ok) throw new Error(`Groq ${groqRes.status}: ${await groqRes.text()}`);
 
-        const reader  = groqRes.body.getReader();
-        const decoder = new TextDecoder();
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const lines = decoder.decode(value, { stream: true }).split('\n');
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const payload = line.slice(6).trim();
-            if (payload === '[DONE]') {
-              res.write('data: [DONE]\n\n');
-              continue;
+          const reader  = groqRes.body.getReader();
+          const decoder = new TextDecoder();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            for (const line of decoder.decode(value, { stream: true }).split('\n')) {
+              if (!line.startsWith('data: ')) continue;
+              const payload = line.slice(6).trim();
+              if (payload === '[DONE]') { res.write('data: [DONE]\n\n'); continue; }
+              try {
+                const text = JSON.parse(payload).choices?.[0]?.delta?.content;
+                if (text) res.write(`data: ${JSON.stringify({ text })}\n\n`);
+              } catch { /* partial */ }
             }
-            try {
-              const obj  = JSON.parse(payload);
-              const text = obj.choices?.[0]?.delta?.content;
-              if (text) res.write(`data: ${JSON.stringify({ text })}\n\n`);
-            } catch { /* partial chunk */ }
+          }
+        } else {
+          // ── Ollama (local dev fallback) ──────────────────────────────────
+          const ollamaRes = await fetch('http://localhost:11434/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'llama3.2',
+              prompt: `${systemPrompt}\n\n${userPrompt}`,
+              stream: true,
+            }),
+          });
+
+          if (!ollamaRes.ok) throw new Error(`Ollama ${ollamaRes.status}`);
+
+          const reader  = ollamaRes.body.getReader();
+          const decoder = new TextDecoder();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            for (const line of decoder.decode(value).split('\n').filter(Boolean)) {
+              try {
+                const obj = JSON.parse(line);
+                if (obj.response) res.write(`data: ${JSON.stringify({ text: obj.response })}\n\n`);
+                if (obj.done)     res.write('data: [DONE]\n\n');
+              } catch { /* partial */ }
+            }
           }
         }
+
         res.end();
       } catch (err) {
         res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
