@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(npm install:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(gh api:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:pillarsapp.com)",
+      "WebFetch(domain:www.pillarsapp.co)",
+      "WebFetch(domain:apps.apple.com)",
+      "WebFetch(domain:muslimpro.com)",
+      "WebFetch(domain:www.producthunt.com)",
+      "Bash(pkill -f \"node server.js\")",
+      "Bash(ollama --version)",
+      "Bash(curl -fsSL https://ollama.com/install.sh)",
+      "Bash(sh)",
+      "Bash(open /Applications/Ollama.app)",
+      "Bash(/Applications/Ollama.app/Contents/Resources/ollama --version)",
+      "Bash(curl -s http://localhost:11434)",
+      "Bash(/Applications/Ollama.app/Contents/Resources/ollama pull:*)",
+      "Bash(/Applications/Ollama.app/Contents/Resources/ollama list:*)",
+      "Bash(curl -s http://localhost:11434/api/generate -d '{\"\"\"\"model\"\"\"\":\"\"\"\"llama3.2\"\"\"\",\"\"\"\"prompt\"\"\"\":\"\"\"\"In 2 sentences, give a practical tafsir of Quran 8:46 - And obey Allah and His Messenger, and do not dispute.\"\"\"\",\"\"\"\"stream\"\"\"\":false}')",
+      "Bash(python3 -c \"import sys,json; print\\(json.load\\(sys.stdin\\)[''''response'''']\\)\")",
+      "Bash(curl -s http://localhost:11434/api/tags)",
+      "Bash(python3 -c \"import sys,json; models=json.load\\(sys.stdin\\)[''''models'''']; print\\([m[''''name''''] for m in models]\\)\")",
+      "Bash(/Users/haider/Documents/websites/QuranTime/.env:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

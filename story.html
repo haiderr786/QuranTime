@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- 1080×1920 = 9:16 — scale down in browser, screenshot at full size -->
+  <meta name="viewport" content="width=1080" />
+  <title>QuranTime — Story</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=Lora:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      background: #06060B;
+    }
+
+    .story {
+      width: 1080px;
+      height: 1920px;
+      position: relative;
+      background: #06060B;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* ── Background layers ─────────────────────────────────────── */
+    .bg-glow-top {
+      position: absolute;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 900px;
+      background: radial-gradient(circle, rgba(196,155,72,0.18) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    .bg-glow-bottom {
+      position: absolute;
+      bottom: -300px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(196,155,72,0.09) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    /* Subtle noise texture via SVG filter */
+    .bg-noise {
+      position: absolute;
+      inset: 0;
+      opacity: 0.4;
+      background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23c49b48' fill-opacity='0.018'%3E%3Cpath d='M40 0 L48 16 L40 13 L32 16 Z M40 80 L48 64 L40 67 L32 64 Z M0 40 L16 48 L13 40 L16 32 Z M80 40 L64 48 L67 40 L64 32 Z M40 26 L54 40 L40 54 L26 40 Z'/%3E%3C/g%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+
+    /* horizontal lines accent */
+    .accent-line {
+      position: absolute;
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(196,155,72,0.3), transparent);
+    }
+
+    .accent-line.top    { top: 480px;  width: 700px; }
+    .accent-line.bottom { bottom: 420px; width: 700px; }
+
+    /* ── Content ───────────────────────────────────────────────── */
+    .content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      padding: 0 80px;
+    }
+
+    /* Top eyebrow */
+    .eyebrow {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 28px;
+      font-weight: 400;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(196,155,72,0.7);
+      margin-bottom: 48px;
+    }
+
+    /* App name */
+    .app-name {
+      font-family: 'Lora', serif;
+      font-size: 108px;
+      font-weight: 300;
+      letter-spacing: 0.04em;
+      background: linear-gradient(160deg, #F5ECD5 20%, #C49B48 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 60px rgba(196,155,72,0.35));
+      line-height: 1;
+      margin-bottom: 52px;
+    }
+
+    /* Concept line */
+    .concept {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      margin-bottom: 80px;
+    }
+
+    .concept-time {
+      font-family: 'Lora', serif;
+      font-size: 72px;
+      font-weight: 300;
+      color: #EDE8DF;
+      letter-spacing: 0.04em;
+      line-height: 1;
+    }
+
+    .concept-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .concept-arrow svg {
+      width: 44px;
+      height: 44px;
+      stroke: rgba(196,155,72,0.7);
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+    }
+
+    .concept-verse {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+
+    .verse-ref {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 38px;
+      font-weight: 500;
+      color: var(--gold, #C49B48);
+      letter-spacing: 0.02em;
+    }
+
+    .verse-name {
+      font-family: 'Amiri', serif;
+      font-size: 44px;
+      color: rgba(237,232,223,0.6);
+      line-height: 1;
+    }
+
+    /* Tagline */
+    .tagline {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 38px;
+      font-weight: 300;
+      color: rgba(237,232,223,0.55);
+      text-align: center;
+      line-height: 1.6;
+      max-width: 760px;
+      margin-bottom: 90px;
+      letter-spacing: 0.01em;
+    }
+
+    .tagline em {
+      font-style: italic;
+      color: rgba(237,232,223,0.8);
+    }
+
+    /* Sample ayah card */
+    .ayah-card {
+      width: 920px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 32px;
+      padding: 56px 64px;
+      margin-bottom: 90px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ayah-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(to right, transparent, rgba(196,155,72,0.5), transparent);
+    }
+
+    .ayah-arabic-text {
+      font-family: 'Amiri', serif;
+      font-size: 54px;
+      line-height: 2;
+      text-align: right;
+      direction: rtl;
+      color: #EDE8DF;
+      margin-bottom: 32px;
+    }
+
+    .ayah-translation-text {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 30px;
+      font-weight: 300;
+      font-style: italic;
+      line-height: 1.7;
+      color: rgba(237,232,223,0.55);
+    }
+
+    .ayah-ref-badge {
+      display: inline-flex;
+      align-items: center;
+      margin-bottom: 24px;
+      padding: 8px 20px;
+      background: rgba(196,155,72,0.12);
+      border: 1px solid rgba(196,155,72,0.25);
+      border-radius: 100px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 24px;
+      letter-spacing: 0.06em;
+      color: rgba(196,155,72,0.9);
+    }
+
+    /* CTA */
+    .cta {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .cta-label {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 26px;
+      font-weight: 400;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(196,155,72,0.6);
+    }
+
+    .cta-badge {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 24px 52px;
+      background: rgba(196,155,72,0.12);
+      border: 1px solid rgba(196,155,72,0.3);
+      border-radius: 100px;
+    }
+
+    .cta-icon {
+      width: 46px;
+      height: 46px;
+    }
+
+    .cta-icon svg {
+      width: 46px;
+      height: 46px;
+      fill: rgba(196,155,72,0.9);
+    }
+
+    .cta-text {
+      font-family: 'Lora', serif;
+      font-size: 44px;
+      font-weight: 400;
+      color: rgba(237,232,223,0.9);
+      letter-spacing: 0.02em;
+    }
+  </style>
+</head>
+<body>
+<div class="story">
+  <!-- Background -->
+  <div class="bg-glow-top"></div>
+  <div class="bg-glow-bottom"></div>
+  <div class="bg-noise"></div>
+  <div class="accent-line top"></div>
+  <div class="accent-line bottom"></div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <div class="eyebrow">Introducing</div>
+
+    <div class="app-name">QuranTime</div>
+
+    <!-- Concept: 08:25 → Surah 8, Ayah 25 -->
+    <div class="concept">
+      <div class="concept-time">08:25</div>
+      <div class="concept-arrow">
+        <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+      <div class="concept-verse">
+        <div class="verse-ref">Surah 8 · Ayah 25</div>
+        <div class="verse-name">الأنفال</div>
+      </div>
+    </div>
+
+    <!-- Sample ayah -->
+    <div class="ayah-card">
+      <div class="ayah-ref-badge">8 : 25</div>
+      <div class="ayah-arabic-text">وَٱتَّقُوا۟ فِتْنَةً لَّا تُصِيبَنَّ ٱلَّذِينَ ظَلَمُوا۟ مِنكُمْ خَآصَّةً</div>
+      <div class="ayah-translation-text">"And fear a trial which will not strike those who have wronged among you exclusively…"</div>
+    </div>
+
+    <!-- Tagline -->
+    <div class="tagline">
+      Every minute of your day,<br><em>a verse meant for you.</em>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta">
+      <div class="cta-label">Available Now</div>
+      <div class="cta-badge">
+        <div class="cta-icon">
+          <!-- crescent -->
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
+          </svg>
+        </div>
+        <div class="cta-text">QuranTime</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
