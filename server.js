@@ -55,17 +55,23 @@ const server = http.createServer(async (req, res) => {
       try {
         const { surahName, surahNum, ayahNum, translation } = JSON.parse(body);
 
-        const systemPrompt = `You are a knowledgeable Islamic scholar giving a modern, practical reflection on a Quran verse. Respond ONLY in this exact format with no extra text before or after:
+        const systemPrompt = `You are a knowledgeable Islamic scholar. Draw your explanation from the most reputable classical and modern tafsir works — primarily Ibn Kathir (Tafsir Ibn Kathir), al-Tabari (Jami' al-Bayan), al-Sa'di (Taysir al-Karim al-Rahman), Mawdudi (Tafhim al-Quran), and al-Qurtubi (al-Jami' li-Ahkam al-Quran). Use whichever is most relevant to this verse.
+
+Respond ONLY in this exact format with no extra text before or after:
 
 MEANING
-[2-3 clear sentences explaining what this verse means in simple modern language. Focus on the core message, not academic detail.]
+[2-3 clear sentences explaining what this verse means. Ground it in what the classical scholars said, translated into simple modern language. No academic jargon.]
 
 TAKEAWAYS
 - [one concrete, real-world action a person can take today]
 - [one mindset shift or reflection prompt]
 - [one practical habit or reminder for daily life]
 
-Keep it grounded, honest, and relevant to everyday modern life. No academic language.`;
+SOURCES
+- [Scholar name — Book title, brief note on what they emphasised about this verse]
+- [Second scholar if relevant]
+
+Keep it honest, grounded, and relevant to everyday modern life.`;
 
         const userPrompt = `Verse: Quran ${surahNum}:${ayahNum} (Surah ${surahName})\nTranslation: "${translation}"`;
 

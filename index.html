@@ -547,6 +547,21 @@
       opacity: 0.7;
     }
 
+    .tafsir-sources {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .tafsir-source-item {
+      font-size: calc(0.82rem * var(--fs, 1));
+      line-height: 1.55;
+      color: var(--muted);
+      padding-left: 0.9rem;
+      border-left: 2px solid var(--gold-dim, rgba(196,155,72,0.3));
+      opacity: 0.8;
+    }
+
     /* ── Skeleton ─────────────────────────────────────────────────── */
     @keyframes shimmer {
       0%   { background-position: -400% 0; }
@@ -819,46 +834,60 @@
     const cursor = streaming ? '<span class="tafsir-cursor"></span>' : '';
 
     const meaningMatch  = raw.match(/MEANING\s*([\s\S]*?)(?=TAKEAWAYS|$)/i);
-    const takeawayMatch = raw.match(/TAKEAWAYS\s*([\s\S]*?)$/i);
+    const takeawayMatch = raw.match(/TAKEAWAYS\s*([\s\S]*?)(?=SOURCES|$)/i);
+    const sourcesMatch  = raw.match(/SOURCES\s*([\s\S]*?)$/i);
 
-    const meaningText = meaningMatch ? meaningMatch[1].trim() : '';
-    const takeawayRaw = takeawayMatch ? takeawayMatch[1].trim() : '';
+    const meaningText  = meaningMatch  ? meaningMatch[1].trim()  : '';
+    const takeawayRaw  = takeawayMatch ? takeawayMatch[1].trim() : '';
+    const sourcesRaw   = sourcesMatch  ? sourcesMatch[1].trim()  : '';
 
-    // If we haven't hit TAKEAWAYS yet, show meaning as plain streaming text
-    if (!takeawayMatch && !meaningMatch) {
-      return `<span class="tafsir-meaning">${esc(raw)}${cursor}</span>`;
+    if (!meaningMatch && !takeawayMatch) {
+      return `<div class="tafsir-meaning">${esc(raw)}${cursor}</div>`;
     }
 
     let html = '';
 
     if (meaningText) {
       html += `<div class="tafsir-section-label">Meaning</div>`;
-      html += `<div class="tafsir-meaning">${esc(meaningText)}</div>`;
+      html += `<div class="tafsir-meaning">${esc(meaningText)}${!takeawayMatch && streaming ? cursor : ''}</div>`;
     }
 
-    if (takeawayRaw) {
+    if (takeawayRaw || (streaming && takeawayMatch)) {
       const lines = takeawayRaw.split('\n')
         .map(l => l.trim())
         .filter(l => l.startsWith('-') || l.startsWith('•') || l.match(/^\d+\./));
 
+      html += `<div class="tafsir-section-label">Today's Takeaways</div>`;
       if (lines.length > 0) {
-        html += `<div class="tafsir-section-label">Today's Takeaways</div>`;
         html += `<div class="tafsir-takeaways">`;
         lines.forEach((l, i) => {
           const text = l.replace(/^[-•]|\d+\./, '').trim();
           const isLast = i === lines.length - 1;
-          html += `<div class="tafsir-takeaway-item">${esc(text)}${isLast && streaming ? cursor : ''}</div>`;
+          html += `<div class="tafsir-takeaway-item">${esc(text)}${isLast && streaming && !sourcesMatch ? cursor : ''}</div>`;
         });
         html += `</div>`;
       } else if (streaming) {
-        // Takeaways section started but no bullet lines yet
-        html += `<div class="tafsir-section-label">Today's Takeaways</div>`;
         html += `<div class="tafsir-meaning">${esc(takeawayRaw)}${cursor}</div>`;
       }
-    } else if (streaming && meaningText) {
-      // Still writing meaning
-      html = `<div class="tafsir-section-label">Meaning</div>`;
-      html += `<div class="tafsir-meaning">${esc(meaningText)}${cursor}</div>`;
+    }
+
+    if (sourcesRaw || (streaming && sourcesMatch)) {
+      const lines = sourcesRaw.split('\n')
+        .map(l => l.trim())
+        .filter(l => l.startsWith('-') || l.startsWith('•') || l.match(/^\d+\./));
+
+      html += `<div class="tafsir-section-label">Sources</div>`;
+      if (lines.length > 0) {
+        html += `<div class="tafsir-sources">`;
+        lines.forEach((l, i) => {
+          const text = l.replace(/^[-•]|\d+\./, '').trim();
+          const isLast = i === lines.length - 1;
+          html += `<div class="tafsir-source-item">${esc(text)}${isLast && streaming ? cursor : ''}</div>`;
+        });
+        html += `</div>`;
+      } else if (streaming) {
+        html += `<div class="tafsir-meaning">${esc(sourcesRaw)}${cursor}</div>`;
+      }
     }
 
     return html;
