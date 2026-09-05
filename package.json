@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --env-file=.env server.js"
+    "dev": "PORT=3456 node --env-file=.env server.js"
   },
   "engines": {
     "node": ">=20.0.0"

@@ -900,7 +900,7 @@
       body: JSON.stringify({ surahName, surahNum, ayahNum, arabicText, translation }),
     });
 
-    if (!res.ok) throw new Error(`Ollama ${res.status}`);
+    if (!res.ok) throw new Error(`AI tafsir ${res.status}`);
 
     const tafsirTextEl = document.getElementById('tafsirText');
     const tafsirBadge  = document.getElementById('tafsirBadge');
@@ -916,19 +916,28 @@
         if (!line.startsWith('data: ')) continue;
         const payload = line.slice(6).trim();
         if (payload === '[DONE]') {
+          if (!buf.trim()) throw new Error('AI tafsir returned no content');
           tafsirTextEl.innerHTML = renderStructuredTafsir(buf, false);
           tafsirBadge.classList.add('done');
-          break;
+          return;
         }
         try {
           const obj = JSON.parse(payload);
+          if (obj.error) throw new Error(obj.error);
           if (obj.text) {
             buf += obj.text;
             tafsirTextEl.innerHTML = renderStructuredTafsir(buf, true);
           }
-        } catch { /* partial chunk */ }
+        } catch (e) {
+          if (e instanceof SyntaxError) continue;
+          throw e;
+        }
       }
     }
+
+    if (!buf.trim()) throw new Error('AI tafsir returned no content');
+    tafsirTextEl.innerHTML = renderStructuredTafsir(buf, false);
+    tafsirBadge.classList.add('done');
   }
 
   /* ── Interaction pause ───────────────────────────────────────────── */

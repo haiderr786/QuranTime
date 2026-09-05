@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const GROQ_API_KEY     = process.env.GROQ_API_KEY     || '';
-const GROQ_MODEL       = 'llama-3.1-8b-instant';
+const GROQ_MODEL       = process.env.GROQ_MODEL       || 'qwen/qwen3.8-27b';
 const GROQ_API_URL     = 'https://api.groq.com/openai/v1/chat/completions';
 
 const MIME = {
@@ -75,12 +75,6 @@ Keep it honest, grounded, and relevant to everyday modern life.`;
 
         const userPrompt = `Verse: Quran ${surahNum}:${ayahNum} (Surah ${surahName})\nTranslation: "${translation}"`;
 
-        res.writeHead(200, {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-        });
-
         if (GROQ_API_KEY) {
           // ── Groq (production) ────────────────────────────────────────────
           const groqRes = await fetch(GROQ_API_URL, {
@@ -101,7 +95,17 @@ Keep it honest, grounded, and relevant to everyday modern life.`;
             }),
           });
 
-          if (!groqRes.ok) throw new Error(`Groq ${groqRes.status}: ${await groqRes.text()}`);
+          if (!groqRes.ok) {
+            res.writeHead(502, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: `Groq ${groqRes.status}: ${await groqRes.text()}` }));
+            return;
+          }
+
+          res.writeHead(200, {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+          });
 
           const reader  = groqRes.body.getReader();
           const decoder = new TextDecoder();
@@ -120,6 +124,12 @@ Keep it honest, grounded, and relevant to everyday modern life.`;
           }
         } else {
           // ── Ollama (local dev fallback) ──────────────────────────────────
+          res.writeHead(200, {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+          });
+
           const ollamaRes = await fetch('http://localhost:11434/api/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -149,9 +159,13 @@ Keep it honest, grounded, and relevant to everyday modern life.`;
 
         res.end();
       } catch (err) {
-        res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
-        res.write('data: [DONE]\n\n');
-        res.end();
+        if (!res.headersSent) {
+          res.writeHead(502, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: err.message }));
+        } else {
+          res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+          res.end();
+        }
       }
     });
     return;
@@ -171,5 +185,5 @@ Keep it honest, grounded, and relevant to everyday modern life.`;
   });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3456;
 server.listen(PORT, () => console.log(`QuranTime running at http://localhost:${PORT}`));
