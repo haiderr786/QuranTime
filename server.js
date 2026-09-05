@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const GROQ_API_KEY     = process.env.GROQ_API_KEY     || '';
-const GROQ_MODEL       = process.env.GROQ_MODEL       || 'qwen/qwen3.8-27b';
+const GROQ_MODEL       = process.env.GROQ_MODEL       || 'openai/gpt-oss-20b';
 const GROQ_API_URL     = 'https://api.groq.com/openai/v1/chat/completions';
 
 const MIME = {
